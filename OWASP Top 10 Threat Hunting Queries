@@ -1,0 +1,119 @@
+# OWASP Top 10 Threat Hunting Queries (KQL) for Microsoft Defender
+
+## Introduction
+This repository contains **KQL (Kusto Query Language) threat hunting queries** for detecting **OWASP Top 10 attacks** in **Windows Defender for Endpoint**. Each section covers a specific attack, with steps for **triage, identification, investigation, and remediation**.
+
+---
+
+## **1. Injection Attacks (SQL, Command, LDAP, NoSQL, etc.)**
+
+### **🔍 Summary**
+Injection attacks occur when an attacker sends malicious input to manipulate a database or execute system commands.
+
+### **🚨 Steps to Triage**
+- Identify anomalies in command execution.
+- Look for SQL-related errors in logs.
+- Investigate unauthorized database access.
+
+### **🔎 Identification Queries**
+#### **Detect Suspicious SQL Injection Attempts**
+```kql
+DeviceNetworkEvents
+| where RemoteUrl contains "union select"
+   or RemoteUrl contains "or 1=1"
+   or RemoteUrl contains "xp_cmdshell"
+| project TimeGenerated, DeviceName, RemoteUrl, RemoteIP, InitiatingProcessFileName
+```
+
+#### **Detect PowerShell Execution with SQL Injection Payload**
+```kql
+DeviceProcessEvents
+| where ProcessCommandLine contains "SELECT * FROM"
+   or ProcessCommandLine contains "DROP TABLE"
+   or ProcessCommandLine contains "INSERT INTO"
+```
+
+### **🕵️‍♂️ Investigation**
+- Verify if the queried database schema is legitimate.
+- Check if the query was issued by a legitimate process or user.
+- Correlate with firewall logs to confirm inbound SQL injection attempts.
+
+### **🛡️ Resolution & Remediation**
+✔️ Implement **parameterized queries** to prevent SQL Injection.  
+✔️ Apply **Web Application Firewalls (WAFs)**.  
+✔️ Restrict **database access permissions**.  
+
+---
+
+## **2. Broken Authentication**
+
+### **🔍 Summary**
+Broken authentication happens when session tokens are exposed, credentials are weak, or MFA is not enforced, allowing attackers to take over accounts.
+
+### **🚨 Steps to Triage**
+- Look for multiple failed authentication attempts.
+- Investigate abnormal login locations.
+
+### **🔎 Identification Queries**
+#### **Detect Multiple Failed Logins from a Single IP**
+```kql
+DeviceLogonEvents
+| where ActionType == "LogonFailed"
+| summarize count() by RemoteIP
+| where count_ > 5
+```
+
+#### **Detect Successful Login After Multiple Failures**
+```kql
+DeviceLogonEvents
+| where ActionType == "LogonFailed"
+| summarize FailedCount=count() by Account, RemoteIP
+| join kind=inner (DeviceLogonEvents
+   | where ActionType == "LogonSuccess") on Account
+| project Account, RemoteIP, FailedCount
+```
+
+### **🕵️‍♂️ Investigation**
+- Verify if the login is from a **known user IP**.
+- Check if MFA was bypassed.
+
+### **🛡️ Resolution & Remediation**
+✔️ Enforce **multi-factor authentication (MFA)**.  
+✔️ Implement **account lockout policies**.  
+✔️ Monitor **session token reuse**.  
+
+---
+
+## **3. Cross-Site Scripting (XSS)**
+
+### **🔍 Summary**
+XSS occurs when attackers inject malicious JavaScript into a website to steal cookies or manipulate sessions.
+
+### **🚨 Steps to Triage**
+- Look for `<script>` tags in requests.
+- Identify unusual DOM modifications.
+
+### **🔎 Identification Queries**
+#### **Detect Reflected XSS Attempts**
+```kql
+DeviceWebContentEvents
+| where RequestUrl contains "<script>"
+   or RequestUrl contains "document.cookie"
+   or RequestUrl contains "alert("
+```
+
+### **🕵️‍♂️ Investigation**
+- Review **affected endpoints**.
+- Analyze **user sessions** for anomalies.
+
+### **🛡️ Resolution & Remediation**
+✔️ Implement **input sanitization**.  
+✔️ Use **Content Security Policy (CSP)**.  
+✔️ Enable **Web Application Firewalls (WAFs)**.  
+
+---
+
+## **Final Notes**
+This repository serves as a **threat hunting playbook** for Windows Defender. Each query is designed to **identify OWASP Top 10 attacks**, helping security teams detect, investigate, and mitigate threats efficiently.
+
+Contributions and improvements are welcome! 🚀

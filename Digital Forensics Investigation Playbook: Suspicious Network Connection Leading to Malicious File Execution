@@ -1,0 +1,172 @@
+# Digital Forensics Investigation Playbook: Suspicious Network Connection Leading to Malicious File Execution
+
+## **Incident Overview**
+
+- **Incident Type:** Suspicious Network Connection
+- **Triggered By:** IDS/IPS alert
+- **Assigned To:** Incident Responder
+- **Initial Triage Findings:** A suspicious file download initiated the alert. The file appears as a PDF but is actually a JavaScript (.js) file.
+- **Available Tools:**
+  - **Microsoft Defender** (for EDR and KQL threat hunting)
+  - **Sandbox Environment** (for safe execution and analysis)
+  - **VirusTotal** (for malware hash lookups and behavior analysis)
+
+---
+
+## **Phase 1: Initial Alert Triage**
+
+### **Step 1: Review IDS/IPS Alert Details**
+- **Check IDS/IPS logs for the alert source:**
+```kql
+SecurityAlert
+| where ProviderName == "IDS/IPS"
+| where AlertSeverity in ("High", "Medium")
+| where Description contains "Suspicious Network Connection"
+| project TimeGenerated, AlertName, AlertSeverity, DeviceName, RemoteIP, ProcessCommandLine
+```
+
+- **Extract key details from the alert:**
+  - **Suspicious external IP address**: `X.X.X.X`
+  - **Destination port**: `443 (HTTPS)`
+  - **Process initiating the connection**: `explorer.exe`
+  - **Suspicious file downloaded:** `invoice.pdf.js`
+
+---
+
+## **Phase 2: Host-Based Investigation**
+
+### **Step 2: Identify the File Execution**
+- **Find all processes associated with the suspicious file:**
+```kql
+DeviceProcessEvents
+| where FileName endswith ".js"
+| where InitiatingProcessFileName != "wscript.exe" 
+| project TimeGenerated, DeviceName, InitiatingProcessFileName, ProcessCommandLine
+```
+
+- **Check network connections from this process:**
+```kql
+DeviceNetworkEvents
+| where InitiatingProcessFileName contains "invoice.pdf.js"
+| project TimeGenerated, RemoteIP, RemotePort, InitiatingProcessFileName, ActionType
+```
+
+- **Analyze process tree for suspicious behavior:**
+```kql
+DeviceProcessEvents
+| where InitiatingProcessFileName contains "invoice.pdf.js"
+| extend ParentProcessName = InitiatingProcessFileName
+| project TimeGenerated, DeviceName, FileName, ParentProcessName, ProcessCommandLine
+```
+
+### **Step 3: File Analysis Using Defender**
+- **Retrieve file hash for reputation check:**
+```kql
+DeviceFileEvents
+| where FileName == "invoice.pdf.js"
+| project SHA256, FileName, FolderPath, InitiatingProcessFileName
+```
+
+- **Upload the SHA256 hash to VirusTotal for threat intelligence:**
+  - Navigate to [VirusTotal](https://www.virustotal.com/) and input the file hash.
+  - Review community comments, detection engines, and behavioral analysis.
+
+- **Check if the file has been modified or executed:**
+```kql
+DeviceRegistryEvents
+| where RegistryKey contains "Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+| where RegistryValueName contains "invoice.pdf.js"
+| project TimeGenerated, DeviceName, RegistryKey, RegistryValueName, RegistryValueData
+```
+
+### **Step 4: Dynamic Analysis in Sandbox**
+- **Execute the file safely in an isolated sandbox:**
+  - Capture system calls, network requests, and file modifications.
+  - Observe if the file attempts to download additional payloads.
+
+- **Check outbound network connections from the sandbox:**
+```bash
+netstat -an | findstr "ESTABLISHED"
+```
+
+- **Look for attempts to reach known malicious C2 servers.**
+
+---
+
+## **Phase 3: Containment, Eradication, and Recovery**
+
+### **Step 5: Containment**
+- **Quarantine the file using Defender:**
+```powershell
+Start-MpScan -ScanType FullScan
+```
+
+- **Block outbound traffic to the malicious IP:**
+```powershell
+New-NetFirewallRule -DisplayName "Block Malicious IP" -Direction Outbound -Action Block -RemoteAddress X.X.X.X
+```
+
+- **Force log out all potentially compromised accounts:**
+```kql
+DeviceLogonEvents
+| where AccountName in ("compromised_user")
+| project AccountName, DeviceName, LogonTime
+```
+
+### **Step 6: Eradication**
+- **Delete malicious file and any persistent registry entries:**
+```powershell
+Remove-Item -Path "C:\Users\Public\invoice.pdf.js" -Force
+```
+```powershell
+Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "MaliciousScript" -Force
+```
+
+- **Ensure Defender is fully updated and rescan the system:**
+```powershell
+Update-MpSignature
+Start-MpScan -ScanType FullScan
+```
+
+### **Step 7: Recovery & Hardening**
+- **Reset passwords for compromised accounts.**
+- **Enable attack surface reduction (ASR) rules in Defender:**
+```powershell
+Set-MpPreference -AttackSurfaceReductionRules_Ids "D4F940AB-401B-4EFC-AADC-AD5F3C50688A" -AttackSurfaceReductionRules_Actions Enabled
+```
+- **Monitor for reinfection by continuously checking logs.**
+
+---
+
+## **Final Incident Report**
+
+### **Incident Summary**
+- **Alert Name:** Suspicious Network Connection
+- **Affected System:** `Device-123`
+- **Root Cause:** Malicious JavaScript file masquerading as a PDF.
+- **Attack Type:** File-Based Execution with C2 Communication
+- **Actions Taken:**
+  - Identified suspicious file execution.
+  - Traced process activity and network connections.
+  - Uploaded to VirusTotal for reputation analysis.
+  - Executed in a sandbox to observe behavior.
+  - Blocked malicious IPs and quarantined the file.
+  - Removed persistence mechanisms and hardened defenses.
+
+### **Lessons Learned & Prevention Measures**
+✔️ Implement stricter **email attachment scanning** policies.  
+✔️ Restrict execution of **JavaScript files in user directories**.  
+✔️ Educate users to **avoid opening unknown email attachments**.  
+✔️ Improve IDS/IPS rules for **early detection of malicious file downloads**.  
+
+---
+
+## **Next Steps**
+- **Continuous Monitoring:** Ensure no further suspicious activity.
+- **Review Security Policies:** Strengthen endpoint and network security.
+- **User Awareness Training:** Educate employees about phishing and malicious attachments.
+
+---
+
+### **Repository Contribution**
+This playbook is intended for **incident responders** using **Microsoft Defender and Splunk** for threat hunting and forensics. Contributions to improve detection and response methodologies are welcome! 🚀

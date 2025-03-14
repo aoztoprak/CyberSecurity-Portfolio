@@ -1,0 +1,140 @@
+# OWASP Top 10 Threat Hunting Queries (Splunk) for Windows
+
+## Introduction
+This repository contains **Splunk SPL (Search Processing Language) queries** for detecting **OWASP Top 10 attacks** on Windows-based systems. Each section includes **triage, identification, investigation, and remediation steps** to help security teams detect and mitigate security threats efficiently.
+
+---
+
+## **1. Injection Attacks (SQL, Command, LDAP, NoSQL, etc.)**
+
+### **🔍 Summary**
+Injection attacks occur when an attacker sends malicious input to manipulate a database or execute system commands.
+
+### **🚨 Steps to Triage**
+- Identify anomalies in SQL command execution.
+- Look for suspicious query structures.
+- Investigate unauthorized database access.
+
+### **🔎 Identification Queries**
+#### **Detect Suspicious SQL Injection Attempts**
+```spl
+index=windows EventCode=4688
+| search (CommandLine="*union select*" OR CommandLine="*or 1=1*" OR CommandLine="*xp_cmdshell*")
+| table _time, User, ComputerName, CommandLine
+```
+
+#### **Detect SQL Injection via Web Logs**
+```spl
+index=web_logs
+| search (uri_query="*union select*" OR uri_query="*or 1=1*" OR uri_query="*DROP TABLE*")
+| stats count by client_ip, uri_query
+```
+
+### **🕵️‍♂️ Investigation**
+- Check if the request originated from **known attackers**.
+- Verify if the **database schema was manipulated**.
+- Correlate logs with **firewall and IDS/IPS** events.
+
+### **🛡️ Resolution & Remediation**
+✔️ Implement **parameterized queries**.  
+✔️ Apply **Web Application Firewalls (WAFs)**.  
+✔️ Restrict **database access permissions**.  
+
+---
+
+## **2. Broken Authentication**
+
+### **🔍 Summary**
+Broken authentication happens when session tokens are exposed, credentials are weak, or MFA is not enforced, allowing attackers to take over accounts.
+
+### **🚨 Steps to Triage**
+- Look for multiple failed authentication attempts.
+- Investigate abnormal login patterns.
+
+### **🔎 Identification Queries**
+#### **Detect Multiple Failed Logins from a Single IP**
+```spl
+index=windows EventCode=4625
+| stats count by src_ip, User
+| where count > 5
+```
+
+#### **Detect Successful Login After Multiple Failures**
+```spl
+index=windows EventCode=4625 OR EventCode=4624
+| transaction User startswith=EventCode=4625 endswith=EventCode=4624 maxevents=10
+| table _time, User, src_ip, dest
+```
+
+### **🕵️‍♂️ Investigation**
+- Verify if the login originated from a **known user**.
+- Check if MFA was bypassed.
+- Review authentication logs for anomalies.
+
+### **🛡️ Resolution & Remediation**
+✔️ Enforce **multi-factor authentication (MFA)**.  
+✔️ Implement **account lockout policies**.  
+✔️ Monitor **session token reuse**.  
+
+---
+
+## **3. Cross-Site Scripting (XSS)**
+
+### **🔍 Summary**
+XSS occurs when attackers inject malicious JavaScript into a website to steal cookies or manipulate sessions.
+
+### **🚨 Steps to Triage**
+- Look for `<script>` tags in request logs.
+- Identify unusual DOM modifications.
+
+### **🔎 Identification Queries**
+#### **Detect Reflected XSS Attempts in Web Logs**
+```spl
+index=web_logs
+| search uri_query="*<script>*" OR uri_query="*document.cookie*" OR uri_query="*alert(*"
+| stats count by client_ip, uri_query
+```
+
+### **🕵️‍♂️ Investigation**
+- Review **affected endpoints**.
+- Analyze **user sessions** for anomalies.
+
+### **🛡️ Resolution & Remediation**
+✔️ Implement **input sanitization**.  
+✔️ Use **Content Security Policy (CSP)**.  
+✔️ Enable **Web Application Firewalls (WAFs)**.  
+
+---
+
+## **4. Security Misconfiguration**
+
+### **🔍 Summary**
+Security misconfiguration happens when default settings, unnecessary services, or weak permissions expose systems.
+
+### **🚨 Steps to Triage**
+- Check for default credentials.
+- Detect misconfigured security settings.
+
+### **🔎 Identification Queries**
+#### **Detect Default Admin Logins**
+```spl
+index=windows EventCode=4624
+| search User="admin"
+| stats count by User, src_ip
+```
+
+### **🕵️‍♂️ Investigation**
+- Identify **misconfigured servers**.
+- Check if **unnecessary services** are running.
+
+### **🛡️ Resolution & Remediation**
+✔️ Apply **principle of least privilege**.  
+✔️ Remove **default credentials**.  
+✔️ Harden **server configurations**.  
+
+---
+
+## **Final Notes**
+This repository serves as a **Splunk threat hunting playbook** for detecting OWASP Top 10 attacks on **Windows systems**. Each query is designed to help security teams **detect, investigate, and mitigate threats** efficiently.
+
+Contributions and improvements are welcome! 🚀

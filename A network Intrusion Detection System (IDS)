@@ -1,0 +1,79 @@
+# AI-Assisted Incident Response Investigation Example
+
+## Incident Overview
+A network Intrusion Detection System (IDS/IPS) generated an alert due to suspicious outbound network traffic connecting an internal host to a known malicious IP address. This example illustrates how an Incident Response Analyst can integrate AI tools into daily alert investigations.
+
+## Step 1: IDS Detection Rule (Suricata)
+
+```yaml
+alert ip any any -> [198.51.100.45] any (msg:"ET MALWARE Suspicious Connection to Known Malicious IP"; classtype:trojan-activity; sid:2025001; rev:1;)
+```
+
+**AI Integration:**
+- AI-enhanced rule management tools dynamically update detection signatures based on threat intelligence feeds.
+
+## Step 2: Sample Raw Log from SIEM (Splunk)
+
+```json
+Mar 15 12:34:56 firewall01 ids-alert: {
+  "timestamp":"2025-03-15T12:34:56Z",
+  "src_ip":"192.168.10.25",
+  "src_port":49231,
+  "dest_ip":"198.51.100.45",
+  "dest_port":443,
+  "protocol":"TCP",
+  "alert_signature":"ET MALWARE Suspicious Connection to Known Malicious IP",
+  "severity":"high"
+}
+```
+
+**AI Integration:**
+- Natural language processing (NLP)-based log analysis tools identify and prioritize alerts for rapid analyst response.
+
+## Step 3: Network Traffic Analysis (PCAP)
+
+- **File:** `incident_malicious_connection.pcap`
+- **Description:** TCP traffic capturing SSL handshake attempts and encrypted payload between host `192.168.10.25` and malicious IP `198.51.100.45`.
+- **Malicious Indicators:** Persistent communication indicative of potential Command and Control (C2) activity.
+
+**AI Integration:**
+- AI-powered packet analysis platforms automatically extract suspicious network behavior patterns and indicators from PCAP files, highlighting anomalies requiring human intervention.
+
+## Step 4: OSINT Search Results
+
+- **Malicious IP:** `198.51.100.45`
+- Verified through threat intelligence services (VirusTotal, AbuseIPDB, AlienVault OTX).
+- Associated with malware distribution, C2 infrastructure, and advanced persistent threat (APT) actors.
+
+**AI Integration:**
+- AI-driven threat intelligence platforms aggregate and correlate real-time threat data, providing context-rich intelligence for informed decision-making.
+
+## Incident Response Steps Leveraging AI Tools
+
+### 1. Preparation
+- Validated detection and monitoring tools using AI-enhanced diagnostic checks.
+- Verified host isolation and containment playbooks through automated AI-based simulations.
+
+### 2. Identification
+- Reviewed IDS alerts and SIEM logs with AI-driven analytics to swiftly pinpoint suspicious activities.
+- Conducted automated PCAP analysis using machine learning algorithms to identify anomalous network behaviors indicative of compromise.
+
+### 3. Containment
+- Automated isolation of the compromised host using AI-powered orchestration tools.
+- AI-assisted firewall policy updates to proactively block malicious IP address.
+
+### 4. Eradication
+- Conducted deep forensic analysis on the compromised host using AI-based endpoint detection and response (EDR) solutions.
+- AI-assisted malware removal ensured comprehensive eradication of threats.
+
+### 5. Recovery
+- Validated restoration from clean backups using AI-integrated system integrity verification tools.
+- Implemented additional AI-enhanced security controls to proactively detect future anomalies.
+
+### 6. Lessons Learned
+- AI-driven retrospective analysis to identify gaps in existing firewall rules and detection capabilities.
+- Enhanced preventive strategies through the implementation of AI-based anomaly detection and predictive analytics.
+
+## Final Resolution Summary
+
+Leveraging AI tools throughout the incident response lifecycle enabled rapid detection, containment, and remediation of a sophisticated threat involving malicious network connections. The integration of AI significantly reduced response time and improved accuracy, allowing incident responders to focus on strategic tasks and proactively prevent future incidents.

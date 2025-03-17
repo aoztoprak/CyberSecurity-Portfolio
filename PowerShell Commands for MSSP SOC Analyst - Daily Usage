@@ -1,0 +1,114 @@
+# PowerShell Commands for MSSP SOC Analyst - Daily Usage
+
+This guide contains practical PowerShell commands frequently used by Managed Security Service Provider (MSSP) Security Operations Center (SOC) Analysts for investigating common alerts.
+
+---
+
+## Use Case: Investigating Suspicious Processes
+
+When you receive an alert for a suspicious or potentially malicious process, you can quickly identify and investigate using the following commands:
+
+### List Running Processes
+```powershell
+Get-Process | Sort-Object CPU -Descending | Select-Object -First 10
+```
+*Lists the top 10 processes consuming the most CPU resources.*
+
+### Detailed Process Information
+```powershell
+Get-Process -Name "suspicious_process_name" | Format-List *
+```
+*Provides detailed information about a specific suspicious process.*
+
+### Locate Process Executable Path
+```powershell
+Get-CimInstance Win32_Process -Filter "Name = 'suspicious_process.exe'" | Select-Object Name, ProcessId, ExecutablePath, CommandLine
+```
+*Helps identify the executable path and command line arguments used by the suspicious process.*
+
+---
+
+## Use Case: Investigating User Login Activity
+
+Check recent successful and failed login attempts to investigate unauthorized access attempts.
+
+### Recent Successful Logins
+```powershell
+Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4624} -MaxEvents 10 | Format-Table TimeCreated, Id, @{Name='User';Expression={$_.Properties[5].Value}}, @{Name='IP Address';Expression={$_.Properties[18].Value}}
+```
+*Shows the last 10 successful login events, including timestamps and source IP addresses.*
+
+### Recent Failed Logins
+```powershell
+Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4625} -MaxEvents 10 | Format-Table TimeCreated, Id, @{Name='User';Expression={$_.Properties[5].Value}}, @{Name='FailureReason';Expression={$_.Properties[20].Value}}
+```
+*Displays the last 10 failed login events, including the user involved and the reason for failure.*
+
+---
+
+## Use Case: Investigating Network Connections
+
+Analyze active connections to identify potential malicious network activity.
+
+### Display Active Network Connections
+```powershell
+Get-NetTCPConnection | Where-Object {$_.State -eq "Established"} | Select-Object LocalAddress, LocalPort, RemoteAddress, RemotePort, OwningProcess
+```
+*Shows currently established TCP connections, including remote IPs and associated processes.*
+
+### Identify Process Linked to a Network Connection
+```powershell
+Get-Process -Id (Get-NetTCPConnection -RemoteAddress "suspicious.ip.address" -State Established).OwningProcess
+```
+*Finds the process associated with a specific suspicious IP address.*
+
+---
+
+## Use Case: File and Directory Investigation
+
+Check file hashes, ownership, permissions, and more when investigating suspicious files.
+
+### Check File Hash
+```powershell
+Get-FileHash "C:\Path\To\SuspiciousFile.exe" -Algorithm SHA256
+```
+*Generates a SHA256 hash of the suspicious file for analysis.*
+
+### Check File Ownership and Permissions
+```powershell
+Get-Acl "C:\Path\To\SuspiciousFile.exe" | Format-List
+```
+*Shows file ownership and detailed permissions for the suspicious file.*
+
+---
+
+## Use Case: Scheduled Task Investigation
+
+Investigate potentially malicious scheduled tasks created by attackers.
+
+### List All Scheduled Tasks
+```powershell
+Get-ScheduledTask | Select-Object TaskName, TaskPath, State
+```
+*Displays all scheduled tasks and their current states.*
+
+### Detailed Information of Specific Scheduled Task
+```powershell
+Get-ScheduledTask -TaskName "SuspiciousTask" | Get-ScheduledTaskInfo | Format-List *
+```
+*Provides detailed scheduling information about a specific task.*
+
+### View Scheduled Task Action
+```powershell
+(Get-ScheduledTask -TaskName "SuspiciousTask").Actions
+```
+*Shows the actions performed by the scheduled task, useful for identifying potential malicious commands.*
+
+---
+
+## Conclusion
+
+These PowerShell commands streamline the initial investigation of common security alerts, enabling SOC analysts to quickly respond to threats and mitigate risks effectively.
+
+_For more advanced or customized scripts, feel free to contribute to this repository!_
+

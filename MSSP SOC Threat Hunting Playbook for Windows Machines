@@ -1,0 +1,109 @@
+# MSSP SOC Threat Hunting Playbook for Windows Machines
+
+## Overview
+This repository contains structured Splunk queries and playbook guidelines designed for SOC Analysts and Threat Hunters within MSSP environments, focusing on detecting network and host-based anomalies in Windows machines. Analysts should document findings in the resolution summary of SOC incident tickets.
+
+---
+
+## Playbook Structure
+
+### Threat Hunt Objective:
+Identify anomalies indicating potential security threats in Windows environments.
+
+### Tools:
+- Splunk
+- Microsoft Defender logs
+- Windows Security Event logs
+
+### Target Environment:
+- Windows endpoints and servers
+
+---
+
+## Splunk Threat Hunting Queries
+
+### Network-Based Anomalies
+
+**1. Unusual Outbound Connections (rare destinations)**
+```spl
+index=network_logs sourcetype="firewall" action=allowed
+| stats count by src_ip, dest_ip, dest_port
+| eventstats avg(count) as avg_conn by src_ip
+| where count < avg_conn/10
+| table src_ip, dest_ip, dest_port, count
+```
+**Resolution Summary:**
+Document source IP, destination IP, destination port, and connection frequency anomalies. Investigate IP reputations and document findings.
+
+**2. DNS Tunneling Detection**
+```spl
+index=dns_logs sourcetype="dns"
+| eval query_length=len(query)
+| where query_length>50
+| stats count by src_ip, query
+| sort -count
+```
+**Resolution Summary:**
+Record any excessively long DNS queries and their originating IP addresses. Analyze for data exfiltration indicators and document results.
+
+---
+
+### Host-Based Anomalies
+
+**1. Suspicious Powershell Execution**
+```spl
+index=windows_logs EventCode=4688 Creator_Process_Name="*powershell.exe*"
+| search CommandLine="*-enc*" OR CommandLine="*-encodedcommand*"
+| table _time, ComputerName, User, CommandLine
+```
+**Resolution Summary:**
+Analyze encoded PowerShell commands for malicious intent. Document details and perform endpoint forensic analysis if needed.
+
+**2. Multiple Failed Login Attempts (Brute Force)**
+```spl
+index=windows_logs EventCode=4625
+| stats count by ComputerName, Account_Name, src_ip
+| where count > 10
+| sort -count
+```
+**Resolution Summary:**
+Identify potential brute-force login attempts. Document the affected accounts, hosts, and source IPs. Recommend account lockout or IP blocking as mitigation.
+
+---
+
+### Malware & Persistence Detection
+
+**1. New Scheduled Tasks (Potential Persistence)**
+```spl
+index=windows_logs EventCode=4698 OR EventCode=4702
+| table _time, ComputerName, TaskName, TaskContent
+```
+**Resolution Summary:**
+Investigate newly created or modified scheduled tasks for suspicious persistence methods. Document task details and perform endpoint scans if suspicious.
+
+**2. Defender Alert Correlation**
+```spl
+index=defender_logs sourcetype="microsoft:defender:atp"
+| stats count by AlertName, Severity, MachineName, FileName
+| sort -Severity, -count
+```
+**Resolution Summary:**
+Correlate Defender ATP alerts with recent endpoint behavior. Document affected systems, alert severity, and file details. Escalate high-severity alerts to IR.
+
+---
+
+## Documentation & Reporting
+- Record each identified anomaly clearly in the SOC ticket.
+- Include timestamps, affected systems/IPs, and actions taken.
+- Follow the IR escalation procedures for confirmed threats.
+
+---
+
+## Contributing
+Please submit pull requests with additional queries, improvements, or corrections.
+
+---
+
+## License
+Distributed under MIT License.
+

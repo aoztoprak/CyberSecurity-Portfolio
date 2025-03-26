@@ -1,0 +1,45 @@
+𝗗𝗲𝘁𝗲𝗰𝘁𝗶𝗻𝗴 𝗨𝗻𝗮𝘂𝘁𝗵𝗼𝗿𝗶𝘇𝗲𝗱 𝗥𝗠𝗠 𝗜𝗻𝘀𝘁𝗮𝗻𝗰𝗲𝘀 𝗶𝗻 𝗬𝗼𝘂𝗿 𝗠𝗗𝗘 𝗘𝗻𝘃𝗶𝗿𝗼𝗻𝗺𝗲𝗻𝘁
+
+RMM stands for Remote Monitoring and Management, a software platform that helps Managed Service Providers (MSPs) manage their clients' IT systems remotely. 
+Here's a more detailed explanation:
+•	What it is:
+RMM software allows MSPs to monitor and control their clients' IT operations from a distance, ensuring systems are working smoothly and efficiently. 
+•	Why it's important:
+With more people working from home and an increase in cyber threats, RMM is essential for MSPs to maintain efficient and continuous operation of IT infrastructures, protect against cyberattacks, and improve connectivity and ease of use for users. 
+•	How it works:
+RMM software typically uses an agent installed on the client's endpoints to collect information about the health and performance of the systems and display it to the IT professional in real-time. 
+•	Key Features:
+RMM tools often include features like remote control, automation, patch management, security, and integration with other technologies like PSA (Professional Services Automation) platforms. 
+•	Benefits:
+RMM can help MSPs reduce operational costs, improve efficiency, and enhance their ability to manage and support their clients' IT infrastructure. 
+•	Examples of RMM providers:
+Some popular RMM providers include Atera, N-Able, Datto, NinjaOne, and ConnectWise. 
+
+How it would be exploitable:
+
+A recent Proofpoint blog highlights a growing trend: remote monitoring and management (RMM) tools are becoming a preferred choice for attackers. Increasingly, threat actors are leveraging legitimate RMM tools as the initial payload in email campaigns. These tools are being exploited for purposes such as data exfiltration, financial theft, lateral movement, and the deployment of secondary malware, including ransomware. The marked increase in the use of RMMs as a first-stage payload is particularly concerning.
+
+How the KQL query works:
+
+When this query is executed, it performs the following actions:
+1.	Fetches a list of Remote Management and Monitoring (RMM) tool URLs from an external CSV file located at the provided GitHub URL.
+2.	Filters Device Network events from the last 1 hour (TimeGenerated > ago(1h)).
+3.	Identifies events where:
+o	The action type is a successful connection (ConnectionSuccess).
+o	The Remote URL accessed matches URLs from the fetched RMM list.
+o	The Remote URL does not match any sanctioned (approved) RMM URLs (bomgarcloud.com in this example).
+4.	Returns the most recent event per DeviceId, providing a snapshot of devices making unauthorized RMM connections within the last hour.
+This query helps identify potentially unauthorized or suspicious use of remote management tools within your environment.
+
+let SanctionRMM = dynamic(["bomgarcloud.com"]); // E.g Approved RMM - whitelisting
+let RMMList=externaldata(URI: string, RMMTool: string)
+  [@"https://raw.githubusercontent.com/jsischell-msft/RemoteManagementMonitoringTools/refs/heads/main/Network%20Indicators/RMM_SummaryNetworkURI.csv"];
+let RMMUrl =
+  RMMList
+  | project URI;
+DeviceNetworkEvents
+| where TimeGenerated > ago(1h)
+| where ActionType == @"ConnectionSuccess"
+| where RemoteUrl has_any(RMMUrl)
+| where not (RemoteUrl has_any(SanctionRMM))
+| summarize arg_max(TimeGenerated, *) by DeviceId

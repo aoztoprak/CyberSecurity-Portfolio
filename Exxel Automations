@@ -1,0 +1,48 @@
+
+
+
+
+
+
+
+
+
+
+
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+
+    ' Column definitions
+    Const CompanyCol As Integer = 1      ' Column A
+    Const PositionCol As Integer = 2     ' Column B
+    Const LocationCol As Integer = 3     ' Column C
+    Const DateCol As Integer = 4         ' Column D (auto-filled)
+
+    Dim ChangedRow As Integer
+    ChangedRow = Target.Row
+
+    ' Center-align columns A and B whenever data is entered or changed
+    If Not Intersect(Target, Range(Cells(ChangedRow, CompanyCol), Cells(ChangedRow, PositionCol))) Is Nothing Then
+        Cells(ChangedRow, CompanyCol).HorizontalAlignment = xlCenter
+        Cells(ChangedRow, PositionCol).HorizontalAlignment = xlCenter
+    End If
+
+    ' Trigger only if columns A, B, or C changed
+    If Not Intersect(Target, Range(Cells(ChangedRow, CompanyCol), Cells(ChangedRow, LocationCol))) Is Nothing Then
+        
+        ' Check if Company, Position, and Location are all filled
+        If Cells(ChangedRow, CompanyCol) <> "" And _
+           Cells(ChangedRow, PositionCol) <> "" And _
+           Cells(ChangedRow, LocationCol) <> "" Then
+            
+            ' Insert today's date in column D only if empty
+            If Cells(ChangedRow, DateCol) = "" Then
+                Cells(ChangedRow, DateCol).Value = Format(Date, "mm/dd/yy")
+                Cells(ChangedRow, DateCol).HorizontalAlignment = xlCenter
+            End If
+        End If
+
+    End If
+
+End Sub
+

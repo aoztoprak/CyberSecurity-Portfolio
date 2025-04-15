@@ -67,7 +67,10 @@ grep '" 200 ' apache-ex2.log
 ```bash
 grep "17/Aug/2023" apache-ex2.log | grep "/login.php"
 ```
+Example questions:
 
+How would you modify the original grep pattern above to match blog posts with an ID between 20-29?
+Answer: post=2[0-9]
 ---
 
 ## 🧠 Learning Outcome

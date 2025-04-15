@@ -1,0 +1,85 @@
+# Regex Log Analysis Using Linux
+
+This project documents a hands-on study where Apache log files are analyzed using Linux command-line tools and regular expressions. It covers the full process: locating, extracting, viewing, and filtering logs based on patterns useful for security and incident response.
+
+---
+
+## 📁 Step 1: Navigate to the Log File Directory
+
+```bash
+# Move into the directory where logs are stored
+cd ~/Rooms/introloganalysis/task7/regex
+```
+
+---
+
+## 📆 Step 2: Unzip Apache Log File (if compressed)
+
+```bash
+# If the log file is zipped (e.g., .gz or .zip), unzip it
+gunzip apache-ex2.log.gz    # for .gz files
+# or
+unzip apache-ex2.zip        # for .zip files
+```
+
+> ⚠️ In this case, your log file `apache-ex2.log` is already unzipped.
+
+---
+
+## 📂 Step 3: View Contents of the Log File
+
+```bash
+# To quickly inspect the file
+cat apache-ex2.log | less
+
+# View first 10 lines
+head apache-ex2.log
+
+# View last 10 lines
+tail apache-ex2.log
+```
+
+---
+
+## 🔍 Step 4: Search Log Entries with `grep`
+
+### 🔎 By IP address:
+```bash
+grep "101.98.44.76" apache-ex2.log
+```
+
+### 🔎 By requested page:
+```bash
+grep "/login.php" apache-ex2.log
+```
+
+### 🔎 By date:
+```bash
+grep "17/Aug/2023" apache-ex2.log
+```
+
+### 🔎 By HTTP response code:
+```bash
+grep '" 200 ' apache-ex2.log
+```
+
+### 🔎 Combine filters (e.g., login attempts on 17th Aug):
+```bash
+grep "17/Aug/2023" apache-ex2.log | grep "/login.php"
+```
+
+---
+
+## 🧠 Learning Outcome
+
+- Learned how to navigate Linux file systems
+- Used `grep` and regex to analyze web server logs
+- Identified patterns like repeated login attempts, failed access, and potentially malicious probes
+
+---
+
+## 💡 Future Ideas
+
+- Use `awk` or `cut` for field extraction
+- Visualize top IPs or request counts
+- Convert findings into a threat hunting report

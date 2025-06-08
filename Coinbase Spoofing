@@ -1,0 +1,107 @@
+# 🧪 Phishing Email Investigation: Coinbase Verification Scam (June 2025)
+
+This repository documents a real-world phishing email investigation involving a fake Coinbase verification request, used as a red team simulation or SOC analyst portfolio project.
+
+## 🧾 Scenario Summary
+
+A suspicious email was reported by a user claiming to be from Coinbase, urging identity verification. The link redirected to a fake login page hosted on a `.crabdance.com` domain.
+
+| Type                | Details                            |
+|---------------------|-------------------------------------|
+| **Phishing Type**   | Credential Harvesting               |
+| **Target**          | joe.doe@yahoo.com                   |
+| **Sender Email**    | info@galerie-kabuth.de              |
+| **Subject**         | Action Required: Please Verify Your Account |
+| **Malicious Domain**| 91270verification-accounts-login-coinbase-com.crabdance.com |
+| **Hosting Service** | `crabdance.com` (commonly abused for free phishing hosting) |
+
+---
+
+## 🔍 Email Content & Red Flags
+
+**Body Highlights:**
+- Encouraged urgent identity verification.
+- Claimed account access could be lost in 48 hours.
+- Included legitimate-looking security tips and branding.
+
+
+**Red Flags:**
+- Sent from a non-Coinbase domain.
+- Urgency-based language.
+- Spoofed layout mimicking Coinbase's brand.
+
+---
+
+## 📎 Link Analysis
+
+| Type         | URL                                                                 |
+|--------------|----------------------------------------------------------------------|
+| **Displayed**| https://u.to/jHVJIg                                                  |
+| **Resolved** | https://91270verification-accounts-login-coinbase-com.crabdance.com |
+
+**HTML Review Findings:**
+- **Relative paths** for CSS/assets (common in phishing kits).
+- **Fake Google sign-in elements** to add authenticity.
+- **No form action** in `<form>` tag, potentially handled via JavaScript.
+- **Origin Trial spoof** in meta tag suggesting copied Google content.
+
+---
+
+## 📄 Indicators of Compromise (IOCs)
+
+| Type     | Value                                                                 |
+|----------|-----------------------------------------------------------------------|
+| Domain   | `91270verification-accounts-login-coinbase-com.crabdance.com`         |
+| URL      | `https://u.to/jHVJIg` → redirects to phishing domain                  |
+| Email    | `info@galerie-kabuth.de`                                              |
+| Hosting  | crabdance.com (used for phishing campaigns)
+
+---
+
+## 💡 Detection Recommendations
+
+### Email Header Rules:
+- Flag non-Coinbase sender using keywords like “Coinbase” but domain mismatch.
+- Alert on SPF/DKIM/DMARC failures from known brand names.
+
+### URL Detection:
+- Monitor and block `.crabdance.com` domains.
+- Analyze shortened links (`u.to`, `bit.ly`) in emails.
+
+### HTML Signatures:
+- Block or sandbox pages with:
+  - Google sign-in classes in non-google domains.
+  - Meta tags spoofing origin trials.
+
+---
+
+## 🛡️ Mitigation & Response
+
+- Alerted affected users.
+- Blocked sender and phishing domain in mail filters.
+- Reported domain to hosting provider.
+- Created YARA/Sigma rules for phishing signature detection.
+- Conducted phishing awareness training refresh.
+
+---
+
+## 📘 Use Case
+
+This scenario can be reused for:
+- SOC training
+- Red team exercises
+- Phishing simulation campaigns
+- Portfolio demonstration for incident response or threat intelligence roles
+
+---
+
+## 📂 File Structure
+
+```bash
+📁 phishing-investigation-coinbase-2025
+├── README.md
+├── email-artifact.eml         # Saved .eml of phishing email (optional)
+├── html-analysis.md           # Detailed HTML breakdown of the phishing page
+├── urlscan_report.pdf         # Optional: screenshot or PDF from urlscan.io
+├── indicators.txt             # IOC list (domains, IPs, hashes)
+└── mitigation-playbook.md     # Step-by-step response guide
